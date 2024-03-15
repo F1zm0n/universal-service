@@ -1,0 +1,9 @@
+kafka:
+  topics:
+    list:
+      - email
+    mailer: email
+req:
+  http:
+    urls:
+      mailer: "http://mailer:5001/mail"

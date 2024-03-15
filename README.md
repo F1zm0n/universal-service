@@ -4,7 +4,7 @@ _universal-app are go kit driven microservices on all themes_
 
 # Services
 
-[] auth
+[x] auth
 [] gateaway
 [] weather check
 [] image saver

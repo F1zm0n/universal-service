@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/F1zm0n/uni-auth/repository"
 )
@@ -35,7 +36,10 @@ func connectPostgres() (*gorm.DB, error) {
 		viper.GetString("postgres.port"),
 		viper.GetString("postgres.sslmode"),
 	)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+
 	return db, err
 }
 

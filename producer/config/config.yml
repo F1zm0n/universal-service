@@ -1,0 +1,6 @@
+listen:
+  http:
+    port: 5000
+kafka:
+  topics:
+    mailer: email

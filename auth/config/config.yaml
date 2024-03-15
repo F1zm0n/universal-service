@@ -1,10 +1,17 @@
 postgres:
   password: password
   user: postgres
-  host: localhost
+  host: postgres
   dbname: users
   port: 5432
   sslmode: disable
 auth:
   secret: nigger
   tokenttl: 24h
+listen:
+  grpc:
+    port: 8082
+  http:
+    port: 8081
+  debug:
+    port: 8080

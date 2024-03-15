@@ -2,12 +2,17 @@ package authservice
 
 import (
 	"context"
+	"errors"
+	"net/mail"
+	"strings"
 	"time"
 
+	"github.com/go-kit/log"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 
 	"github.com/F1zm0n/uni-auth/repository"
 )
@@ -27,6 +32,26 @@ func NewBasicService(db repository.Repository) Service {
 	}
 }
 
+var (
+	ErrWrongEmailFmt     = errors.New("wrong email format")
+	ErrWrongPassFmt      = errors.New("password should be minimum 8 length long")
+	ErrInsertingUser     = errors.New("error inserting user")
+	ErrInvalidCreds      = errors.New("invalid credentials")
+	ErrGeneratingToken   = errors.New("error generating jwt token")
+	ErrUserAlreadyExists = errors.New("user with this email already exists")
+)
+
+type User struct {
+	ID       uuid.UUID
+	Email    string
+	Password string
+}
+
+func validateEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
+}
+
 func (s basicService) Register(ctx context.Context, user User) error {
 	repoUser, err := validateUserCreds(user)
 	if err != nil {
@@ -35,6 +60,11 @@ func (s basicService) Register(ctx context.Context, user User) error {
 
 	err = s.db.InsertUser(ctx, repoUser)
 	if err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) ||
+			strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return ErrUserAlreadyExists
+		}
+
 		return ErrInsertingUser
 	}
 	return nil
@@ -88,4 +118,14 @@ func validateUserCreds(user User) (repository.User, error) {
 		Email:    user.Email,
 		Password: passHash,
 	}, nil
+}
+
+func New(logger log.Logger, repo repository.Repository) Service {
+	var svc Service
+	{
+		svc = NewBasicService(repo)
+		svc = LoggingMiddleware(logger)(svc)
+		svc = InstrumentingMiddleware()(svc)
+	}
+	return svc
 }

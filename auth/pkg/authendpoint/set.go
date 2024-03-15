@@ -2,14 +2,11 @@ package authendpoint
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-kit/kit/circuitbreaker"
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/ratelimit"
 	"github.com/go-kit/log"
 	"github.com/sony/gobreaker"
-	"golang.org/x/time/rate"
 
 	"github.com/F1zm0n/uni-auth/pkg/authservice"
 )
@@ -23,11 +20,6 @@ func New(svc authservice.Service, logger log.Logger) Set {
 	var loginEndpoint endpoint.Endpoint
 	{
 		loginEndpoint = makeLoginEndpoint(svc)
-		loginEndpoint = ratelimit.NewErroringLimiter(
-			rate.NewLimiter(rate.Every(time.Second), 1),
-		)(
-			loginEndpoint,
-		)
 		loginEndpoint = circuitbreaker.Gobreaker(
 			gobreaker.NewCircuitBreaker(gobreaker.Settings{}),
 		)(
@@ -39,11 +31,6 @@ func New(svc authservice.Service, logger log.Logger) Set {
 	var registerEndpoint endpoint.Endpoint
 	{
 		registerEndpoint = makeRegisterEndpoint(svc)
-		registerEndpoint = ratelimit.NewErroringLimiter(
-			rate.NewLimiter(rate.Every(time.Second), 1),
-		)(
-			registerEndpoint,
-		)
 		registerEndpoint = circuitbreaker.Gobreaker(
 			gobreaker.NewCircuitBreaker(gobreaker.Settings{}),
 		)(
@@ -68,7 +55,7 @@ type LoginRequest struct {
 
 type LoginResponse struct {
 	Token string `json:"token"`
-	Err   error  `json:"_"`
+	Err   error  `json:"error"`
 }
 
 type RegisterRequest struct {
@@ -77,7 +64,7 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	Err error `json:"_"`
+	Err error `json:"error"`
 }
 
 func (s Set) Login(ctx context.Context, user authservice.User) (string, error) {
