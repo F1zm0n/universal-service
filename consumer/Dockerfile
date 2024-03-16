@@ -7,17 +7,15 @@ WORKDIR /app
 COPY . ./
 RUN go mod download 
 
-RUN GOOS=linux GOARCH=amd64 go build -tags musl -o /app/producer /app/cmd/producer/
+RUN GOOS=linux GOARCH=amd64 go build -tags musl -o /app/consumer /app/cmd/consumer/
 
-RUN chmod +x /app/producer
+RUN chmod +x /app/consumer
 
 FROM alpine:latest AS runner
 
 RUN mkdir /app/
 
-COPY --from=builder /app/producer /app/
+COPY --from=builder /app/consumer /app
 COPY --from=builder /app/config /app/config
 
-CMD [ "/app/producer" ]
-
-
+CMD [ "/app/consumer" ]

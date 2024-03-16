@@ -6,11 +6,10 @@ _universal-app are go kit driven microservices on all themes_
 
 [x] auth
 [] gateaway
-[] weather check
 [] image saver
-[] producer
-[] receiver
-[] mailer
+[x] producer
+[x] receiver
+[x] mailer
 [] rss-scrapper
 [] mb front-end (react?, ssr)
 [] broker

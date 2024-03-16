@@ -1,7 +1,5 @@
 kafka:
   topics:
-    list:
-      - email
     mailer: email
 req:
   http:

@@ -11,7 +11,7 @@ import (
 
 var (
 	configPaths = []string{"/app/config", "../consumer/config"}
-	topics      = viper.GetStringSlice("kafka.topics.list")
+	topics      = []string{"email"}
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 
 	rec := receiver.NewKafkaConsumer(sl, topics)
 
-	go rec.Consume()
+	rec.Consume()
 }
 
 func parseConfig(paths []string) {

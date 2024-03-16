@@ -1,0 +1,23 @@
+gmail:
+  name: Nurayat Beltayev
+  add: nurayatlucky2007@gmail.com
+  pass: okxwjedgaoeuromf
+postgres:
+  password: password
+  user: postgres
+  host: postgres
+  dbname: users
+  port: 5432
+  sslmode: disable
+listen:
+  http:
+    port: 5001
+req:
+  http:
+    auth:
+      addres: localhost:8081
+      create: /register
+    mailer:
+      addres: localhost:5001
+      verify: /verify
+      mail: /mail
