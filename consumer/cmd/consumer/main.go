@@ -11,7 +11,7 @@ import (
 
 var (
 	configPaths = []string{"/app/config", "../consumer/config"}
-	topics      = []string{"email"}
+	topics      = []string{"email", "verify"}
 )
 
 func main() {

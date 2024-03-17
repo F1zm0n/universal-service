@@ -8,12 +8,16 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/go-kit/log"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
 type EmailPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+type VerifyPayload struct {
+	VerId uuid.UUID `json:"ver_id"`
 }
 
 func New(logger log.Logger) Service {
@@ -31,6 +35,8 @@ var ErrProducingToKafka = errors.New("internal server error k")
 
 type Service interface {
 	ProduceMail(ctx context.Context, email, password string) error
+	ProduceVer(ctx context.Context, verId uuid.UUID) error
+	ProduceRegister(ctx context.Context, email, password string) error
 }
 
 type kafkaService struct {
@@ -60,6 +66,29 @@ func (s kafkaService) ProduceMail(ctx context.Context, email, password string) e
 		return err
 	}
 	return s.produceData(ctx, viper.GetString("kafka.topics.mailer"), j)
+}
+
+func (s kafkaService) ProduceVer(ctx context.Context, verId uuid.UUID) error {
+	data := VerifyPayload{
+		VerId: verId,
+	}
+	j, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return s.produceData(ctx, "verify", j)
+}
+
+func (s kafkaService) ProduceRegister(ctx context.Context, email, password string) error {
+	data := EmailPayload{
+		Email:    email,
+		Password: password,
+	}
+	j, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return s.produceData(ctx, viper.GetString("kafka.topics.register"), j)
 }
 
 func (s kafkaService) produceData(_ context.Context, topic string, data []byte) error {

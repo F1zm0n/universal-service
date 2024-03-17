@@ -2,7 +2,6 @@ package receiver
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -39,7 +38,14 @@ func NewKafkaConsumer(sl *slog.Logger, topics []string) Consumer {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("connected to kafka")
+
+	myTop, err := c.Subscription()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("subscribed to ", myTop)
+
+	sl.Info("connected to kafka queue")
 	return &kafkaConsumer{
 		sl:   sl,
 		cons: c,
@@ -50,16 +56,35 @@ func (c kafkaConsumer) Consume() {
 	for true {
 		msg, err := c.cons.ReadMessage(-1)
 		if err == nil {
-			c.sl.Info("received message from kafka queue")
-			c.sl.Info("topicname", slog.String("topic", *msg.TopicPartition.Topic))
+			c.sl.Info(
+				"received message from kafka queue",
+				slog.String("topic", *msg.TopicPartition.Topic),
+			)
 			switch *msg.TopicPartition.Topic {
 			case "email":
+				l := c.sl.With(slog.String("topic", "email"))
+				l.Info("sending request")
 				err := sendReq(http.MethodPost, "http://mailer:5001/mail", msg.Value)
 				if err != nil {
-					c.sl.Error("error sending req", slog.String("err", err.Error()))
+					l.Error("error sending req", slog.String("err", err.Error()))
 					continue
 				}
-				c.sl.Info("sent the request")
+			case "verify":
+				l := c.sl.With(slog.String("topic", "verify"))
+				l.Info("sending request")
+				err := sendReq(http.MethodPost, "http://mailer:5001/verify", msg.Value)
+				if err != nil {
+					l.Error("error sending req", slog.String("err", err.Error()))
+					continue
+				}
+			case "register":
+				l := c.sl.With(slog.String("topic", "register"))
+				l.Info("sending request")
+				err := sendReq(http.MethodPost, "http://auth:5001/register", msg.Value)
+				if err != nil {
+					l.Error("error sending req", slog.String("err", err.Error()))
+					continue
+				}
 			}
 		} else if !err.(kafka.Error).IsTimeout() {
 			c.sl.Info("error consuming from kafka")
@@ -75,7 +100,6 @@ func sendReq(method string, url string, data []byte) error {
 	req.Header.Add("Content-Type", "application/json")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return ErrSendingReq
 	}
 	if res.StatusCode != 200 {

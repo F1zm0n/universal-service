@@ -4,3 +4,5 @@ listen:
 kafka:
   topics:
     mailer: email
+    verify: verify
+    register: register

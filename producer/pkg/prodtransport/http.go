@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -32,6 +31,18 @@ func NewHTTPHandler(endpoints prodendpoint.Set, logger log.Logger) http.Handler 
 	m.Handle("/mail", httptransport.NewServer(
 		endpoints.MailEndpoint,
 		decodeHTTPMailRequest,
+		encodeHTTPGenericResponse,
+		options...,
+	))
+	m.Handle("/register", httptransport.NewServer(
+		endpoints.RegisterEndpoint,
+		decodeHTTPRegisterRequest,
+		encodeHTTPGenericResponse,
+		options...,
+	))
+	m.Handle("/verify", httptransport.NewServer(
+		endpoints.VerEndpoint,
+		decodeHTTPVerRequest,
 		encodeHTTPGenericResponse,
 		options...,
 	))
@@ -64,6 +75,35 @@ func NewHTTPClient(instance string, logger log.Logger) (prodservice.Service, err
 		}))(mailEndpoint)
 	}
 
+	var registerEndpoint endpoint.Endpoint
+	{
+		registerEndpoint = httptransport.NewClient(
+			http.MethodPost,
+			copyURL(u, `/register`),
+			encodeHTTPGenericRequest,
+			decodeHTTPRegisterResponse,
+			options...,
+		).Endpoint()
+		registerEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
+			Name:    "Register",
+			Timeout: 30 * time.Second,
+		}))(registerEndpoint)
+	}
+
+	var verEndpoint endpoint.Endpoint
+	{
+		verEndpoint = httptransport.NewClient(
+			http.MethodPost,
+			copyURL(u, `/verify`),
+			encodeHTTPGenericRequest,
+			decodeHTTPVerResponse,
+			options...,
+		).Endpoint()
+		verEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
+			Name:    "Verify",
+			Timeout: 30 * time.Second,
+		}))(verEndpoint)
+	}
 	return prodendpoint.Set{
 		MailEndpoint: mailEndpoint,
 	}, nil
@@ -116,10 +156,41 @@ func decodeHTTPMailResponse(_ context.Context, r *http.Response) (interface{}, e
 	return resp, err
 }
 
+func decodeHTTPRegisterRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var req prodendpoint.RegisterRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	return req, err
+}
+
+func decodeHTTPRegisterResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp prodendpoint.RegisterResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+
+	return resp, err
+}
+
+func decodeHTTPVerRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var req prodendpoint.VerRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	return req, err
+}
+
+func decodeHTTPVerResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp prodendpoint.VerResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+
+	return resp, err
+}
+
 func encodeHTTPGenericRequest(_ context.Context, r *http.Request, request interface{}) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
-		fmt.Println("error")
 		return err
 	}
 
