@@ -5,10 +5,10 @@ services:
       context: ./../auth/
       dockerfile: ./Dockerfile
     restart: always
-    ports:
-      - 8081
-      - 8080
-      - 8082
+    # ports:
+    #   - 8081
+    #   - 8080
+    #   - 8082
     depends_on:
       - postgres
   producer:
@@ -26,20 +26,21 @@ services:
     depends_on:
       - kafka
       - kafdrop
-  consumer:
+  consumer-mail:
     build:
-      context: ./../consumer
+      context: ./../consumer_mailer
       dockerfile: ./Dockerfile
     restart: always
     depends_on:
       - producer
-  mailer:
-    build:
-      context: ./../mailer
-      dockerfile: ./Dockerfile
-    restart: always
-    depends_on:
       - postgres
+  # mailer:
+  #   build:
+  #     context: ./../mailer
+  #     dockerfile: ./Dockerfile
+  #   restart: always
+  #   depends_on:
+  #     - postgres
   postgres:
     image: "postgres"
     ports:
