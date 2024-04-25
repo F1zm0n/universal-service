@@ -9,7 +9,6 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/go-kit/log"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 )
 
 type EmailPayload struct {
@@ -50,6 +49,7 @@ func NewKafkaService() Service {
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Println("connected to kafka")
 	return &kafkaService{
 		conn: p,
@@ -65,7 +65,7 @@ func (s kafkaService) ProduceMail(ctx context.Context, email, password string) e
 	if err != nil {
 		return err
 	}
-	return s.produceData(ctx, viper.GetString("kafka.topics.mailer"), j)
+	return s.produceData(ctx, "mail", j)
 }
 
 func (s kafkaService) ProduceVer(ctx context.Context, verId uuid.UUID) error {
@@ -76,7 +76,7 @@ func (s kafkaService) ProduceVer(ctx context.Context, verId uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	return s.produceData(ctx, "verify", j)
+	return s.produceData(ctx, "ver", j)
 }
 
 func (s kafkaService) ProduceRegister(ctx context.Context, email, password string) error {
@@ -88,7 +88,8 @@ func (s kafkaService) ProduceRegister(ctx context.Context, email, password strin
 	if err != nil {
 		return err
 	}
-	return s.produceData(ctx, viper.GetString("kafka.topics.register"), j)
+	return s.produceData(ctx, "reg", j)
+	// todo: make the thing with key
 }
 
 func (s kafkaService) produceData(_ context.Context, topic string, data []byte) error {

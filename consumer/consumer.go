@@ -26,9 +26,10 @@ type kafkaConsumer struct {
 
 func NewKafkaConsumer(sl *slog.Logger, topics []string) Consumer {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "kafka:9092",
-		"group.id":          "myGroup",
-		"auto.offset.reset": "earliest",
+		"bootstrap.servers":       "kafka:9092,kafka:29092,localhost:9092",
+		"group.id":                "myGroup",
+		"auto.offset.reset":       "earliest",
+		"fetch.message.max.bytes": 500,
 	})
 	if err != nil {
 		panic(err)
@@ -39,12 +40,6 @@ func NewKafkaConsumer(sl *slog.Logger, topics []string) Consumer {
 		log.Fatal(err)
 	}
 
-	myTop, err := c.Subscription()
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("subscribed to ", myTop)
-
 	sl.Info("connected to kafka queue")
 	return &kafkaConsumer{
 		sl:   sl,
@@ -53,7 +48,7 @@ func NewKafkaConsumer(sl *slog.Logger, topics []string) Consumer {
 }
 
 func (c kafkaConsumer) Consume() {
-	for true {
+	for {
 		msg, err := c.cons.ReadMessage(-1)
 		if err == nil {
 			c.sl.Info(
@@ -61,15 +56,15 @@ func (c kafkaConsumer) Consume() {
 				slog.String("topic", *msg.TopicPartition.Topic),
 			)
 			switch *msg.TopicPartition.Topic {
-			case "email":
-				l := c.sl.With(slog.String("topic", "email"))
+			case "mail":
+				l := c.sl.With(slog.String("topic", "mail"))
 				l.Info("sending request")
 				err := sendReq(http.MethodPost, "http://mailer:5001/mail", msg.Value)
 				if err != nil {
 					l.Error("error sending req", slog.String("err", err.Error()))
 					continue
 				}
-			case "verify":
+			case "ver":
 				l := c.sl.With(slog.String("topic", "verify"))
 				l.Info("sending request")
 				err := sendReq(http.MethodPost, "http://mailer:5001/verify", msg.Value)
@@ -84,10 +79,10 @@ func (c kafkaConsumer) Consume() {
 				if err != nil {
 					l.Error("error sending req", slog.String("err", err.Error()))
 					continue
+				} else {
+					c.sl.Info("error consuming", slog.Any("error", err))
 				}
 			}
-		} else if !err.(kafka.Error).IsTimeout() {
-			c.sl.Info("error consuming from kafka")
 		}
 	}
 }

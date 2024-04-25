@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -65,6 +66,15 @@ func (p Postgres) InsertUser(ctx context.Context, user repository.User) error {
 func (p Postgres) GetUserByEmail(ctx context.Context, email string) (repository.User, error) {
 	var user repository.User
 	res := p.conn.WithContext(ctx).Where("email = ?", email).First(&user)
+	if res.Error != nil {
+		return repository.User{}, res.Error
+	}
+	return user, nil
+}
+
+func (p Postgres) GetUserById(ctx context.Context, id uuid.UUID) (repository.User, error) {
+	var user repository.User
+	res := p.conn.WithContext(ctx).Where("id= ?", id).First(&user)
 	if res.Error != nil {
 		return repository.User{}, res.Error
 	}

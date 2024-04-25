@@ -1,9 +1,12 @@
-module github.com/F1zm0n/universal-receiver
+module github.com/F1zm0n/consume_mail
 
 go 1.22.1
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.3.0
+	github.com/google/uuid v1.6.0
+	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
+	github.com/lib/pq v1.10.9
 	github.com/spf13/viper v1.18.2
 )
 

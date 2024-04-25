@@ -16,6 +16,10 @@ type VerifyPayload struct {
 type ErrResponse struct {
 	Err error `json:"error"`
 }
+type LoginResponse struct {
+	Token string `json:"token"`
+	Error string `json:"error"`
+}
 
 func HandleRegister(c echo.Context) error {
 	req, err := http.NewRequest(http.MethodPost, "http://producer:5000/mail", c.Request().Body)
@@ -69,9 +73,24 @@ func HandleVerify(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{"error": nil})
 }
 
-// func HandleLogin(c echo.Context) error {
-// 	req, err := http.NewRequest(http.MethodPost, "http://mailer:5001/mail", c.Request().Body)
-// 	if err != nil {
-// 		return err
-// 	}
-// }
+func HandleLogin(c echo.Context) error {
+	req, err := http.NewRequest(http.MethodPost, "http://auth:8081/login", c.Request().Body)
+	if err != nil {
+		return err
+	}
+	cli := http.DefaultClient
+	res, err := cli.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != 200 {
+		return fmt.Errorf("error status code is not 200")
+	}
+	var response LoginResponse
+	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	return c.JSON(200, response)
+}
