@@ -11,9 +11,8 @@ import (
 func main() {
 	var (
 		e      = echo.New()
-		srv    = e.Group("/srv")
-		auth   = srv.Group("/a")
-		unauth = srv.Group("/u")
+		auth   = e.Group("/a")
+		unauth = e.Group("/u")
 	)
 
 	auth.Use(transport.JWTAuthentication)

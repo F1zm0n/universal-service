@@ -75,7 +75,7 @@ func (s basicService) Login(ctx context.Context, user User) (string, error) {
 	if err != nil {
 		return "", ErrInvalidCreds
 	}
-	if err := bcrypt.CompareHashAndPassword(resUser.Password, []byte(user.Password)); err != nil {
+	if err = bcrypt.CompareHashAndPassword(resUser.Password, []byte(user.Password)); err != nil {
 		return "", ErrInvalidCreds
 	}
 	tok, err := NewToken(user)
